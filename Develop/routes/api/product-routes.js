@@ -62,28 +62,33 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     // Create the product
-    console.log("req.body ********************************************************");
+    console.log("req.body******************************************************************");
     console.log(req.body);
-    console.log("req.body ********************************************************");
+    console.log("req.body******************************************************************");
     const product = await Product.create(req.body);
     
-    // Check if there are tagIds in the request body
-    if (req.body.tagIds && req.body.tagIds.length > 0) {
-      // Fetch the product to include associations
-      const productWithAssociations = await Product.findByPk(product.id, {
-        include: [{ model: Category, as: 'categories' }, { model: Tag, as: 'tags' }],
-      });
-
-      // Associate the tags with the product using the ProductTag model
-      await productWithAssociations.setTags(req.body.tagIds);
+        if (req.body.tags && req.body.tags.length > 0) {
+          console.log('req.body.tags:', req.body.tags);
+          const tags = await Tag.findAll({
+            where: {
+              id: req.body.tags,
+            },
+          });
+          console.log('Fetched Tags:', tags);
+          await product.setTags(tags);
     }
+    
+    // Fetch the product with associated tags
+    const productWithTags = await Product.findByPk(product.id, {
+      include: [{ model: Category, as: 'category' }, { model: Tag, as: 'tags' }],
+    });
 
-    // Respond with the created product
-    res.status(200).json(product);
-  } catch (err) {
-    console.log(err);
-    res.status(400).json(err);
-  }
+    // Respond with the created product along with associated tags
+    res.status(200).json(productWithTags);
+    } catch (err) {
+      console.log(err);
+      res.status(400).json(err);
+    }
 });
 
 // update product
